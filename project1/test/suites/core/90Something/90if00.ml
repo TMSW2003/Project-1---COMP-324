@@ -1,9 +1,8 @@
 (*!tests!
- *
- * { "output" : ["0"] }
+ * { "exception":   "TypeError" }
  *
  *)
 
-let x = if true then 0 else 1 ;;
-let rec f x = if x = 0 then 0 else f (x - 1) ;;
+if 6 then 4 else 1 ;;
+
  
