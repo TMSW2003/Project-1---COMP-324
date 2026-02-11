@@ -1,7 +1,7 @@
 (*!tests!
  *
- * { "output": ["false"] }
+ * { "output": ["TypeError] }
  *
  *)
 
-(2 * 3) < (1 + 5) ;;
+true < 1 ;;
