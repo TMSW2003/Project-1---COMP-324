@@ -1,6 +1,6 @@
 (*!tests!
  *
- * { "output": ["TypeError] }
+ * { "output": ["TypeError"] }
  *
  *)
 
