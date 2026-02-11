@@ -1,4 +1,5 @@
 (*!tests!
+*
 * { "exception":   "Error" }
 *
 *)
