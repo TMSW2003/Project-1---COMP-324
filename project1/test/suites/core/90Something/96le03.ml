@@ -1,6 +1,6 @@
 (*!tests!
  *
- * { "output": ["false"] }
+ * { "output": ["true"] }
  *
  *)
  
