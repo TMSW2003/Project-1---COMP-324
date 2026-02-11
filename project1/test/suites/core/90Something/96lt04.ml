@@ -1,7 +1,6 @@
 (*!tests!
- *
- * { "output": ["TypeError"] }
- *
- *)
+* { "exception":   "TypeError" }
+*
+*)
 
 true < 1 ;;
