@@ -1,7 +1,6 @@
 (*!tests!
- *
- * { "output": ["TypeError"] }
- *
- *)
+* { "exception":   "TypeError" }
+*
+*)
 
 5 = true ;;

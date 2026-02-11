@@ -1,5 +1,5 @@
 (*!tests!
-* { "exception":   "TypeError" }
+* { "exception":   "Error" }
 *
 *)
 let rec f x y = x + y ;;
