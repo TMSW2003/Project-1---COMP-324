@@ -62,7 +62,22 @@ let rec eval (e : Ast.Expr.t) : Value.t =
   match e with
   | Num n -> n
   | Binop(Plus, e0, e1) ->  (let m = eval e0 in
-                            let n = eval 01 in
+                            let n = eval e1 in
                             let p = m + n in
                             p)
-
+  |Binop(Minus, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m - n in
+                            p)
+  |Binop(Mod, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m mod n in
+                            p)
+  |Binop(Or, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m || n in
+                            p)
+  |Binop(Ne, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m != n in
+                            p)
