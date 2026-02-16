@@ -61,8 +61,12 @@ let exec (_ : Ast.Script.t) : Value.t =
 let rec eval (e : Ast.Expr.t) : Value.t =
   match e with
   | Num n -> n
-  | Binop(Plus, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
+  | Unop (Neg, e0) ->       (let m = eval eo in
+                            0 - m)
+  | Unop (Not, e0) ->       (let m = eval e0 in
+                            not e0)
+  | Binop (Plus, e0, e1) -> (let m = eval e0 in
+                            let n = eval 01 in
                             let p = m + n in
                             p)
   |Binop(Minus, e0, e1) ->  (let m = eval e0 in
