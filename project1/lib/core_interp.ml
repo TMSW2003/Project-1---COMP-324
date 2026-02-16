@@ -51,9 +51,18 @@ module Env = struct
 
 end
 
-
+ 
 (* exec p = v, where `v` is the result of executing `p`.
  *)
 let exec (_ : Ast.Script.t) : Value.t =
   failwith "Unimplemented:  Core.Interp.exec"
+
+
+let rec eval (e : Ast.Expr.t) : Value.t =
+  match e with
+  | Num n -> n
+  | Binop(Plus, e0, e1) ->  (let m = eval e0 in
+                            let n = eval 01 in
+                            let p = m + n in
+                            p)
 
