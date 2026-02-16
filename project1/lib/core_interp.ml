@@ -66,22 +66,54 @@ let rec eval (e : Ast.Expr.t) : Value.t =
   | Unop (Not, e0) ->       (let m = eval e0 in
                             not e0)
   | Binop (Plus, e0, e1) -> (let m = eval e0 in
-                            let n = eval 01 in
+                            let n = eval e1 in
                             let p = m + n in
                             p)
-  |Binop(Minus, e0, e1) ->  (let m = eval e0 in
+  | Binop(Minus, e0, e1) ->  (let m = eval e0 in
                             let n = eval e1 in
                             let p = m - n in
                             p)
-  |Binop(Mod, e0, e1) ->  (let m = eval e0 in
+  | Binop(Times, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m * n in
+                            p)
+  | Binop(Div, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m / n in
+                            p)
+  | Binop(Mod, e0, e1) ->  (let m = eval e0 in
                             let n = eval e1 in
                             let p = m mod n in
                             p)
-  |Binop(Or, e0, e1) ->  (let m = eval e0 in
+  | Binop(And, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m && n in
+                            p)
+  | Binop(Or, e0, e1) ->  (let m = eval e0 in
                             let n = eval e1 in
                             let p = m || n in
                             p)
-  |Binop(Ne, e0, e1) ->  (let m = eval e0 in
+  | Binop(Eq, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m = n in
+                            p)
+  | Binop(Ne, e0, e1) ->  (let m = eval e0 in
                             let n = eval e1 in
                             let p = m != n in
+                            p)
+  | Binop(Lt, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m < n in
+                            p)
+  | Binop(Gt, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m > n in
+                            p)
+  | Binop(Ge, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m >= n in
+                            p)
+  | Binop(Le, e0, e1) ->  (let m = eval e0 in
+                            let n = eval e1 in
+                            let p = m <= n in
                             p)
