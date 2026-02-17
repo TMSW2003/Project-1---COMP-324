@@ -72,9 +72,11 @@ let exec (_ : Ast.Script.t) : Value.t =
   failwith "Unimplemented:  Core.Interp.exec"
 
 
-let rec eval (e : Ast.Expr.t) : Value.t =
+let rec eval (rho : Env.t) (e : Ast.Expr.t) : Value.t =
   match e with
+  | Var s -> lookup rho s
   | Num n -> n
+  | Bool b -> b
   | Unop (Neg, e0) ->       (let m = eval eo in
                             0 - m)
   | Unop (Not, e0) ->       (let m = eval e0 in
