@@ -51,7 +51,15 @@ module Env = struct
 
 end
 
- 
+
+(*  lookup rho id = v, where v is the value associated with id in rho.
+*)
+let rec lookup (rho : Env.t, id : Id.t) : Value.t
+  match rho with
+  | (id0, v)::tail -> if id == id0 then v else lookup tail id
+  | _ -> failwth "Unbound variable or something buddy-o"
+
+  
 (* exec p = v, where `v` is the result of executing `p`.
  *)
 let exec (_ : Ast.Script.t) : Value.t =
