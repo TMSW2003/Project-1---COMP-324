@@ -54,11 +54,17 @@ end
 
 (*  lookup rho id = v, where v is the value associated with id in rho.
 *)
-let rec lookup (rho : Env.t, id : Id.t) : Value.t
+let rec lookup (rho : Env.t) (id : Ast.Id.t) : Value.t
   match rho with
-  | (id0, v)::tail -> if id == id0 then v else lookup tail id
+  | (id, v)::tail -> v
+  | _::tail -> lookup tail id
   | _ -> failwth "Unbound variable or something buddy-o"
 
+let rec addrho (rho : Env.t) (id : Id.t) (v : Value.t) : Env.t
+  match rho with
+  | (id, _)::tail -> (id, v)::tail
+  | x::tail -> x::(addrho tail id v)
+  | _ -> (id, v)::Env.empty
   
 (* exec p = v, where `v` is the result of executing `p`.
  *)
