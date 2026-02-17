@@ -5,6 +5,8 @@
 
 module Ast = Core_ast
 
+module E = Ast.Expr
+
 (* UndefinedFunction f is raised when f is called but not defined.
  *)
 exception UndefinedFunction of Ast.Id.t
@@ -49,87 +51,80 @@ module Env = struct
    *)
   let empty : t = []
 
+    (*  lookup ρ x = ρ(x).
+   *)
+(*! env lookup !*)
+  let lookup (rho : t) (x : Ast.Id.t) : Value.t = 
+    List.assoc x rho
+(*! end !*)
+
+  (*  update ρ x v = ρ{x → v}.
+   *)
+  let addrho (rho : t) (x : Ast.Id.t) (v : Value.t) : t =
+    (x, v) :: List.remove_assoc x rho
 end
 
 
-(*  lookup rho id = v, where v is the value associated with id in rho.
-*)
-let rec lookup (rho : Env.t) (id : Ast.Id.t) : Value.t
-  match rho with
-  | (id, v)::tail -> v
-  | _::tail -> lookup tail id
-  | _ -> failwth "Unbound variable or something buddy-o"
+(*  unop op v = v', where v' is the result of applying the semantic
+ *  denotation of `op` to `v`.
+ *)
+let unop (op: E.unop) (v : Value.t) : Value.t =
+  match (op, v) with
+  | (E.Neg, Value.V_Int n) -> Value.V_Int (-n)
+  | (E.Not, Value.V_Bool b) -> Value.V_Bool (not b)
+  | _ -> failwith "Unimplemented"
 
-let rec addrho (rho : Env.t) (id : Id.t) (v : Value.t) : Env.t
-  match rho with
-  | (id, _)::tail -> (id, v)::tail
-  | x::tail -> x::(addrho tail id v)
-  | _ -> (id, v)::Env.empty
-  
+
+(*  binop op v0 v1 = v', where v' is the result of applying the semantic
+ *  denotation of `op` to `v0` and `v1`.
+ *)
+let binop (op : E.binop) (v0 : Value.t) (v1 : Value.t) : Value.t =
+  match (op, v0, v1) with
+  (*Basic arithmetic operations*)
+  | (E.Plus, Value.V_Int n0, Value.V_Int n1) -> Value.V_Int (n0 + n1)
+  | (E.Minus, Value.V_Int n0, Value.V_Int n1) -> Value.V_Int (n0 - n1)
+  | (E.Times, Value.V_Int n0, Value.V_Int n1) -> Vale.V_Int (n0 * n1)
+  | (E.Div, Value.V_Int n0, Value.V_Int n1) -> Value.V_Int (n0 / n1)
+  | (E.Mod, Value.V_Int n0, Value.V_Int n1) -> Value.V_Int (n0 mod n1)
+  (*Basic boolean operations*)
+  | (E.And, Value.V_Bool b0, Value.V_Bool b1) -> Value.V_Bool (b0 && b1)
+  | (E.Or, Value.V_Bool b0, Value.V_Bool b1) -> Value.V_Bool (b0 || b1)
+  (*Equality and Inequality*)
+  | (E.Eq, Value.V_Int n0, Value.V_Int n1) -> Value.V_Bool (n0 == n1)
+  | (E.Eq, Value.V_Bool b0, Value.V_Bool b1) -> Value.V_Bool (b0 == b1)
+  | (E.Ne, Value.V_Int n0, Value.V_Int n1) -> Value.V_Bool (n0 != n1)
+  | (E.Ne, Value.V_Bool b0, Value.V_Bool b1) -> Value.V_Bool (b0 != b1)
+  (*Ineqality operations*)
+  | (E.Lt, Value.V_Int n0, Value.V_Int n1) -> Value.V_Int (n0 < n1)
+  | (E.Le, Value.V_Int n0, Value.V_Int n1) -> Value.V_Int (n0 <= n1)
+  | (E.Gt, Value.V_Int n0, Value.V_Int n1) -> Value.V_Int (n0 > n1)
+  | (E.Ge, Value.V_Int n0, Value.V_Int n1) -> Value.V_Int (n0 >= n1)
+  | _ -> failwith "Unimplemented"
+
+
+(*  eval ρ e = v, where ρ ├ e ↓ v according to our evaluation rules.
+ *)
+let rec eval (rho : Env.t) (funs : Ast.Script.fundef list) (e : E.t) : Value.t =
+  match e with
+  | E.Var s -> Env.lookup rho s
+  | E.Num n -> Value.V_Int n
+  | E.Bool b -> b
+  | E.Unop (op, e') ->
+    let v = eval rho e' in unop op v
+  | E.Binop (op, e0, e1) -> 
+    let v0 = eval rho e0 in
+    let v1 = eval rho e1 in
+    binop op v0 v1
+  | E.If(e0, e1, e2) ->
+    if eval rho e0 then eval rho e1 else eval rho e2
+  | E.Let(x, e0, e1) ->
+    let x' = eval rho e0 in
+    let rho' = Env.addrho rho x m in eval rho' e1
+  | E.Call(f, es) -> failwith "Unimplemented"
+
+                          
 (* exec p = v, where `v` is the result of executing `p`.
  *)
-let exec (_ : Ast.Script.t) : Value.t =
-  failwith "Unimplemented:  Core.Interp.exec"
-
-
-let rec eval (rho : Env.t) (e : Ast.Expr.t) : Value.t =
-  match e with
-  | Var s -> lookup rho s
-  | Num n -> n
-  | Bool b -> b
-  | Unop (Neg, e0) ->       (let m = eval eo in
-                            0 - m)
-  | Unop (Not, e0) ->       (let m = eval e0 in
-                            not e0)
-  | Binop (Plus, e0, e1) -> (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m + n in
-                            p)
-  | Binop(Minus, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m - n in
-                            p)
-  | Binop(Times, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m * n in
-                            p)
-  | Binop(Div, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m / n in
-                            p)
-  | Binop(Mod, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m mod n in
-                            p)
-  | Binop(And, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m && n in
-                            p)
-  | Binop(Or, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m || n in
-                            p)
-  | Binop(Eq, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m = n in
-                            p)
-  | Binop(Ne, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m != n in
-                            p)
-  | Binop(Lt, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m < n in
-                            p)
-  | Binop(Gt, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m > n in
-                            p)
-  | Binop(Ge, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m >= n in
-                            p)
-  | Binop(Le, e0, e1) ->  (let m = eval e0 in
-                            let n = eval e1 in
-                            let p = m <= n in
-                            p)
+let exec (p : Ast.Script.t) : Value.t =
+  match p with
+  | (funs, e) -> eval Env.empty funs e
