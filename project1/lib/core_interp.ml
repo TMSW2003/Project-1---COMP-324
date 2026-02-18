@@ -107,10 +107,14 @@ let evalFun (rho : Env.t) (f : Ast.Id.t) (funs : Ast.Script.fundef list) (es : E
   (* My thoughts right now are that we'd have a helper function that finds
   *  the right function given its identifier, then evaluates all the expressions
   *  and updates the corresponding parameters for the function in rho, before then
-  *  evaluating the function expression with the updates rho, returning that value.
+  *  evaluating the function expression with the updated rho, returning that value.
   *  The biggest problem here is that this is kinda mutually recursive with eval,
   *  but I'm not sure how to get around that.
   *)
+  let rec funFind (funs : Ast.Script.fundef list) : Ast.Script.fundef =
+    match funs with
+    | (f', ps, e)::funs' -> if f' = f then (f', ps, e) else funFind funs'
+    | _ -> raise (UndefinedFunction f)
 
 
 (*  eval ρ e = v, where ρ ├ e ↓ v according to our evaluation rules.
