@@ -102,24 +102,35 @@ let binop (op : E.binop) (v0 : Value.t) (v1 : Value.t) : Value.t =
   | (E.Ge, Value.V_Int n0, Value.V_Int n1) -> Value.V_Bool (n0 >= n1)
   | _ -> raise (TypeError "Should call you Alexandre, cause you're a Dumas")
 
-
-let evalFun (rho : Env.t) (f : Ast.Id.t) (funs : Ast.Script.fundef list) (es : E.t list) : Value.t =
-  (* My thoughts right now are that we'd have a helper function that finds
-  *  the right function given its identifier, then evaluates all the expressions
-  *  and updates the corresponding parameters for the function in rho, before then
-  *  evaluating the function expression with the updated rho, returning that value.
-  *  The biggest problem here is that this is kinda mutually recursive with eval,
-  *  but I'm not sure how to get around that.
-  *)
-  let rec funFind (funs : Ast.Script.fundef list) : Ast.Script.fundef =
-    match funs with
-    | (f', ps, e)::funs' -> if f' = f then (f', ps, e) else funFind funs'
-    | _ -> raise (UndefinedFunction f)
-
-
 (*  eval ρ e = v, where ρ ├ e ↓ v according to our evaluation rules.
  *)
 let rec eval (rho : Env.t) (funs : Ast.Script.fundef list) (e : E.t) : Value.t =
+  let evalFun (rho : Env.t) (f : Ast.Id.t) (funs : Ast.Script.fundef list) (vs : Value.t list) : Value.t =
+    let rec funFind (funs : Ast.Script.fundef list) : Ast.Script.fundef =
+      match funs with
+      | (f', ps, e)::funs' -> if f' = f then (f', ps, e) else funFind funs'
+      | _ -> raise (UndefinedFunction f)
+    in
+
+    let rec setParams (rho : Env.t) (params : Ast.Id.t list) (vals : Value.t list) : Env.t =
+      match (params, vals) with
+      | (p::ps', v::vs') ->  Env.addrho (setParams rho ps' vs') p v
+      | ([], []) -> rho
+      | ([], _) -> raise (TypeError "hi :)")
+      | (_, []) -> raise (TypeError "hi :)")
+    in
+
+    let (_, params, e) = funFind funs in
+    let rho' = setParams rho params vs in
+    eval rho' funs e
+  in
+
+  let rec evalExprs (rho : Env.t) (funs : Ast.Script.fundef list) (es : E.t list) : Value.t list =
+    match es with
+    | e::es' -> (eval rho funs e)::(evalExprs rho funs es')
+    | [] -> []
+  in
+
   match e with
   | E.Var x -> Env.lookup rho x
   | E.Num n -> Value.V_Int n
@@ -130,14 +141,14 @@ let rec eval (rho : Env.t) (funs : Ast.Script.fundef list) (e : E.t) : Value.t =
     let v0 = eval rho funs e0 in
     let v1 = eval rho funs e1 in
     binop op v0 v1
-  | E.If(e0, e1, e2) ->
+  | E.If (e0, e1, e2) ->
     (match eval rho funs e0 with
     | (Value.V_Bool b) -> if b then eval rho funs e1 else eval rho funs e2
     | _ -> raise (TypeError "Should call you Alexandre, cause you're a Dumas"))
-  | E.Let(x, e0, e1) ->
+  | E.Let (x, e0, e1) ->
     let x' = eval rho funs e0 in
     let rho' = Env.addrho rho x x' in eval rho' funs e1
-  | _ -> failwith "Unimplemented"
+  | E.Call (f, es) -> evalFun rho f funs (evalExprs rho funs es)
 
                           
 (* exec p = v, where `v` is the result of executing `p`.

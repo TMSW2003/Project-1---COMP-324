@@ -1,6 +1,6 @@
 (*!tests!
 *
-* { "exception":   "Error" }
+* { "exception":   "TypeError" }
 *
 *)
 let rec f x y = x + y ;;
