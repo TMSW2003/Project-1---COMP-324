@@ -102,16 +102,31 @@ let binop (op : E.binop) (v0 : Value.t) (v1 : Value.t) : Value.t =
   | (E.Ge, Value.V_Int n0, Value.V_Int n1) -> Value.V_Bool (n0 >= n1)
   | _ -> raise (TypeError "Should call you Alexandre, cause you're a Dumas")
 
+
 (*  eval ρ e = v, where ρ ├ e ↓ v according to our evaluation rules.
  *)
 let rec eval (rho : Env.t) (funs : Ast.Script.fundef list) (e : E.t) : Value.t =
+
+  (*  evalFun rho f funs vs = v, where under environment rho the 
+  *   function with id f in funs evaluates to v given arguments vs 
+  *   according to our rules.
+  *)
   let evalFun (rho : Env.t) (f : Ast.Id.t) (funs : Ast.Script.fundef list) (vs : Value.t list) : Value.t =
+
+    (*  Given a list of functions, returns the function with the id, f, as given
+    *   in evalFun. funFind funs = f', where f' is the function in funs corresponding
+    *   to f.
+    *)
     let rec funFind (funs : Ast.Script.fundef list) : Ast.Script.fundef =
       match funs with
       | (f', ps, e)::funs' -> if f' = f then (f', ps, e) else funFind funs'
       | _ -> raise (UndefinedFunction f)
     in
 
+    (*  setParams rho params vals = env, where env is rho, but with each param
+    *   updated to have the corresponding value from vals, where p_i is updated to
+    *   value v_i.
+    *)
     let rec setParams (rho : Env.t) (params : Ast.Id.t list) (vals : Value.t list) : Env.t =
       match (params, vals) with
       | (p::ps', v::vs') ->  Env.addrho (setParams rho ps' vs') p v
@@ -125,6 +140,9 @@ let rec eval (rho : Env.t) (funs : Ast.Script.fundef list) (e : E.t) : Value.t =
     eval rho' funs e
   in
 
+  (*  evalExprs rho funs es = vs, where vs consists of the list of values you get when
+  *   evaluating each expression in es with function list funs under environment rho.
+  *)
   let rec evalExprs (rho : Env.t) (funs : Ast.Script.fundef list) (es : E.t list) : Value.t list =
     match es with
     | e::es' -> (eval rho funs e)::(evalExprs rho funs es')
