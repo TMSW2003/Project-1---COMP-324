@@ -112,41 +112,17 @@ let rec eval (rho : Env.t) (funs : Ast.Script.fundef list) (e : E.t) : Value.t =
   *   according to our rules.
   *)
   let evalFun (rho : Env.t) (f : Ast.Id.t) (funs : Ast.Script.fundef list) (vs : Value.t list) : Value.t =
-
-    (*  Given a list of functions, returns the function with the id, f, as given
-    *   in evalFun. funFind funs = f', where f' is the function in funs corresponding
-    *   to f.
-    *)
-    let rec funFind (funs : Ast.Script.fundef list) : Ast.Script.fundef =
-      match funs with
-      | (f', ps, e)::funs' -> if f' = f then (f', ps, e) else funFind funs'
-      | _ -> raise (UndefinedFunction f)
-    in
-
-    (*  setParams rho params vals = env, where env is rho, but with each param
-    *   updated to have the corresponding value from vals, where p_i is updated to
-    *   value v_i.
-    *)
-    let rec setParams (rho : Env.t) (params : Ast.Id.t list) (vals : Value.t list) : Env.t =
-      match (params, vals) with
-      | (p::ps', v::vs') ->  Env.addrho (setParams rho ps' vs') p v
-      | ([], []) -> rho
-      | ([], _) -> raise (TypeError "hi :)")
-      | (_, []) -> raise (TypeError "hi :)")
-    in
-
-    let (_, params, e) = funFind funs in
-    let rho' = setParams rho params vs in
-    eval rho' funs e
-  in
-
-  (*  evalExprs rho funs es = vs, where vs consists of the list of values you get when
-  *   evaluating each expression in es with function list funs under environment rho.
-  *)
-  let rec evalExprs (rho : Env.t) (funs : Ast.Script.fundef list) (es : E.t list) : Value.t list =
-    match es with
-    | e::es' -> (eval rho funs e)::(evalExprs rho funs es')
-    | [] -> []
+    (*  List.find_opt is grabbing the function in funs matching id f *)
+    let f' = List.find_opt (fun (f', _, _) -> f' = f) funs in
+    match f' with
+    | None -> raise (UndefinedFunction f)
+    | Some (_, params, e) -> 
+      let join =
+        try List.combine params vs with 
+          | Invalid_argument _ -> raise (TypeError "hi :)")
+      in
+      (*  List.fold_left is updating the environment with the params and values *)
+      let rho' = List.fold_left (fun acc (p, v) -> Env.addrho acc p v) rho join in eval rho' funs e
   in
 
   match e with
@@ -166,7 +142,8 @@ let rec eval (rho : Env.t) (funs : Ast.Script.fundef list) (e : E.t) : Value.t =
   | E.Let (x, e0, e1) ->
     let x' = eval rho funs e0 in
     let rho' = Env.addrho rho x x' in eval rho' funs e1
-  | E.Call (f, es) -> evalFun rho f funs (evalExprs rho funs es)
+  (*  List.map is getting a list of the values of the arguments *)
+  | E.Call (f, es) -> evalFun rho f funs (List.map (eval rho funs) es)
 
                           
 (* exec p = v, where `v` is the result of executing `p`.
