@@ -123,7 +123,7 @@ let binop (op : E.binop) (v0 : Value.t) (v1 : Value.t) : Value.t =
 let rec eval (rho : Env.t) (e : E.t) : Value.t =
 
   (*  bind rho params vs = rho', where rho' is rho updated with bindings
-   *  params[i] ↦ vs[i] for each i.
+   *  params[i] -> vs[i] for each i.
    *)
   let bind (rho : Env.t) (params : Ast.Id.t list) (vs : Value.t list) : Env.t =
     let join =
