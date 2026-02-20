@@ -122,6 +122,9 @@ let binop (op : E.binop) (v0 : Value.t) (v1 : Value.t) : Value.t =
  *)
 let rec eval (rho : Env.t) (e : E.t) : Value.t =
 
+  (*  bind rho params vs = rho', where rho' is rho updated with bindings
+   *  params[i] ↦ vs[i] for each i.
+   *)
   let bind (rho : Env.t) (params : Ast.Id.t list) (vs : Value.t list) : Env.t =
     let join =
       try List.combine params vs with 
@@ -130,6 +133,13 @@ let rec eval (rho : Env.t) (e : E.t) : Value.t =
     List.fold_left (fun acc (p, v) -> Env.update acc p v) rho join
   in
 
+  (*  apply fv vs = v, where v is the result of applying function value fv
+   *  to argument values vs.
+   *
+   *  - If # of params = # of args, evaluates the body in the function env.
+   *  - If too few args, returns a partially applied function.
+   *  - If too many args, evaluates and applies remaining args.
+   *)
   let rec apply (fv : Value.t) (vs : Value.t list) : Value.t = 
     match fv with
     | Value.V_Fun (params, body, fenv) -> 
