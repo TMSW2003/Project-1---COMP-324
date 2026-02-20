@@ -26,7 +26,7 @@ module Value = struct
   type t = 
     | V_Int of int
     | V_Bool of bool
-    | V_Fun of Ast.Id.t list * E.t * Env.t
+    | V_Fun of Ast.Id.t list * E.t * (Ast.Id.t * t) list
     [@@deriving show]
 
   (* to_string v = a string representation of v (more human-readable than
@@ -36,7 +36,7 @@ module Value = struct
     match v with
     | V_Int n -> Int.to_string n
     | V_Bool b -> Bool.to_string b
-    | V_Fun _ -> 
+    | V_Fun _ -> "function"
 end
 
 (* Environments.  An environment is a finite map from identifiers to values.
@@ -72,8 +72,8 @@ module Env = struct
   (*  lookup ρ x = ρ(x).
    *)
   let lookup (rho : t) (x : Ast.Id.t) : Value.t = 
-    List.assoc x rho
-
+    try List.assoc x rho with
+    | Not_found -> raise (UnboundVariable x)
   (*  update ρ x v = ρ{x → v}.
    *)
   let update (rho : t) (x : Ast.Id.t) (v : Value.t) : t =
@@ -128,21 +128,30 @@ let rec eval (rho : Env.t) (e : E.t) : Value.t =
         | Invalid_argument _ -> raise (TypeError "hi :)")
     in
     List.fold_left (fun acc (p, v) -> Env.update acc p v) rho join
+  in
 
-
-  let apply (vf : Value.t) (vs : Value.t list) : Value.t = 
-    match vf with
+  let rec apply (fv : Value.t) (vs : Value.t list) : Value.t = 
+    match fv with
     | Value.V_Fun (params, body, fenv) -> 
       let m = List.length params in
       let n = List.length vs in
       if m = n then
-        let rho' = bind fenv params vs in eval rho' body
+        let rho' = bind fenv params vs in 
+        eval rho' body
       
-      if m > n then
+      else if m > n then
+        let boundParam, unboundParam = List.take n params, List.drop n params in
+        let fenv' = bind fenv boundParam vs in
+        Value.V_Fun (unboundParam, body, fenv')
 
-      if m < n then
+      else
+        let vs1, vs_rest = List.take m vs, List.drop m vs in
+        let rho' = bind fenv params vs1 in
+        let result = eval rho' body in
+        apply result vs_rest
 
     | _ -> raise (TypeError "attempt to call a non-function")
+  in
 
   match e with
   | E.Var x -> Env.lookup rho x
@@ -162,8 +171,8 @@ let rec eval (rho : Env.t) (e : E.t) : Value.t =
     let x' = eval rho e0 in
     let rho' = Env.update rho x x' in eval rho' e1
   | E.Fun (params, body) -> Value.V_Fun (params, body, rho)
-  | E.Call (eop, es) ->
-    let fval = eval rho eop in 
+  | E.Call (fe, es) ->
+    let fval = eval rho fe in 
     let args = List.map (eval rho) es in
     apply fval args
 
@@ -172,4 +181,7 @@ let rec eval (rho : Env.t) (e : E.t) : Value.t =
 (* exec p = v, where `v` is the result of executing `p`.
  *)
 let exec (p : Ast.Script.t) : Value.t =
-
+  match p with
+  | Ast.Script.Pgm (funs, e) ->
+    let rho = List.fold_left (fun acc (f, params, body) -> Env.update acc f (Value.V_Fun (params, body, acc))) Env.empty funs in
+    eval rho e
